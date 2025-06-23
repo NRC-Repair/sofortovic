@@ -1,12 +1,14 @@
+
 import streamlit as st
 import re
 import os
 from dotenv import load_dotenv
 from openai import OpenAI
 
-# 🔐 .env-Datei laden
+# 🔐 .env-Datei laden und Key setzen
 load_dotenv()
-client = OpenAI(api_key=os.getenv("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"))
+os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
+client = OpenAI()
 
 def parse_customer_request(text):
     vorname = re.search(r"Vorname:\s*(.*)", text)
@@ -23,7 +25,7 @@ def parse_customer_request(text):
     }
 
 def generate_gpt_email(anrede, nachname, geraet, problem, reparaturart, preis, dauer):
-    prompt = f"""
+    prompt = f"""\
 Formuliere eine professionelle und freundliche Antwort-E-Mail im Namen eines Reparaturservices an eine(n) Kund:in namens {anrede} {nachname}. Die Person hat ein Problem mit folgendem Gerät: {geraet}.
 
 Fehlerbeschreibung:
@@ -32,7 +34,7 @@ Fehlerbeschreibung:
 Bitte erwähne, dass die Reparatur möglich ist. Der Preis für die Reparaturart "{reparaturart}" beträgt {preis} € und die Bearbeitungsdauer beträgt ca. {dauer}. Verwende einen respektvollen und kompetenten Ton und hänge folgenden Abschlussteil an:
 
 Wir untersuchen kostenlos Ihr Gerät und erstellen anschließend eine professionelle Diagnose sowie den kostenlosen Kostenvoranschlag.
- 
+
 Sie haben folgende Möglichkeiten, um uns das Gerät zu übermitteln: 
 
 1. Bringen Sie das Gerät zu einer unserer Annahmestationen Graz, Linz, Wien und München, wo eine Mitarbeiterin oder ein Mitarbeiter das Gerät entgegennimmt, mit Ihnen das Reparaturformular ausfüllt und sich um die professionelle Weiterleitung an unsere Technikabteilungen und Zentrale nach Salzburg (Kunden aus Österreich) oder Freilassing (Kunden aus Deutschland) kümmert.
@@ -76,7 +78,7 @@ if kundenanfrage:
         st.text_area("📄 Generierte GPT-E-Mail", mail, height=600)
 
     if st.button("📄 Standard-E-Mail (fixer Text)"):
-        mail = f"""
+        mail = f"""\
 Betreff: Ihre Anfrage zur {geraet}
 
 Sehr geehrte{anrede} {nachname},
