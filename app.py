@@ -16,9 +16,19 @@ st.title("📧 NRC Anfrage-zu-Antwort Generator mit GPT")
 
 # 📂 API-Key aus Umgebungsvariable laden
 api_key_input = os.getenv("OPENAI_API_KEY")
-if not api_key_input:
-    st.error("❌ Kein API-Key gefunden. Bitte stellen Sie sicher, dass eine .env-Datei mit OPENAI_API_KEY vorhanden ist.")
-    st.stop()
+
+with st.sidebar:
+    st.markdown("## 🔐 API-Status")
+    if api_key_input:
+        try:
+            client = OpenAI(api_key=api_key_input)
+            client.models.list()
+            st.success("✅ API-Key gültig und Verbindung erfolgreich!")
+        except Exception as e:
+            st.error(f"❌ Verbindung fehlgeschlagen: {str(e)}")
+    else:
+        st.warning("⚠️ Kein API-Key gefunden.")
+        st.stop()
 
 client = OpenAI(api_key=api_key_input)
 
