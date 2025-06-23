@@ -1,4 +1,3 @@
-
 import streamlit as st
 import re
 import os
@@ -25,16 +24,16 @@ def parse_customer_request(text):
     }
 
 def generate_gpt_email(anrede, nachname, geraet, problem, reparaturart, preis, dauer):
-    prompt = f"""\
+    prompt = f"""
 Formuliere eine professionelle und freundliche Antwort-E-Mail im Namen eines Reparaturservices an eine(n) Kund:in namens {anrede} {nachname}. Die Person hat ein Problem mit folgendem Gerät: {geraet}.
 
 Fehlerbeschreibung:
 {problem}
 
-Bitte erwähne, dass die Reparatur möglich ist. Der Preis für die Reparaturart "{reparaturart}" beträgt {preis} € und die Bearbeitungsdauer beträgt ca. {dauer}. Verwende einen respektvollen und kompetenten Ton und hänge folgenden Abschlussteil an:
+Bitte erwähne, dass die Reparatur möglich ist. Der Preis für die Reparaturart \"{reparaturart}\" beträgt {preis} € und die Bearbeitungsdauer beträgt ca. {dauer}. Verwende einen respektvollen und kompetenten Ton und hänge folgenden Abschlussteil an:
 
 Wir untersuchen kostenlos Ihr Gerät und erstellen anschließend eine professionelle Diagnose sowie den kostenlosen Kostenvoranschlag.
-
+ 
 Sie haben folgende Möglichkeiten, um uns das Gerät zu übermitteln: 
 
 1. Bringen Sie das Gerät zu einer unserer Annahmestationen Graz, Linz, Wien und München, wo eine Mitarbeiterin oder ein Mitarbeiter das Gerät entgegennimmt, mit Ihnen das Reparaturformular ausfüllt und sich um die professionelle Weiterleitung an unsere Technikabteilungen und Zentrale nach Salzburg (Kunden aus Österreich) oder Freilassing (Kunden aus Deutschland) kümmert.
@@ -57,6 +56,12 @@ https://notebook-repair-corner.at
 
 st.title("📧 NRC Anfrage-zu-Antwort Generator mit GPT")
 
+if st.button("🔍 API-Verbindung testen"):
+    if os.getenv("OPENAI_API_KEY"):
+        st.success("✅ API-Key wurde erkannt und geladen.")
+    else:
+        st.error("❌ API-Key wurde nicht gefunden. Bitte überprüfe deine .env-Datei oder die Streamlit Secrets.")
+
 kundenanfrage = st.text_area("📝 Kundenanfrage einfügen", height=300)
 
 if kundenanfrage:
@@ -78,7 +83,7 @@ if kundenanfrage:
         st.text_area("📄 Generierte GPT-E-Mail", mail, height=600)
 
     if st.button("📄 Standard-E-Mail (fixer Text)"):
-        mail = f"""\
+        mail = f"""
 Betreff: Ihre Anfrage zur {geraet}
 
 Sehr geehrte{anrede} {nachname},
