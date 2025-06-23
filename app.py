@@ -7,14 +7,38 @@ from openai import OpenAI, OpenAIError
 # 🔐 .env-Datei laden (optional, falls vorhanden)
 load_dotenv()
 
-# 🧠 OpenAI-Client vorbereiten (manuell eingetragener Key hat Priorität)
-client = None
+# 💰 Token-Kosten GPT-3.5 (geschätzt pro 1000 Tokens)
+COST_INPUT = 0.0005
+COST_OUTPUT = 0.0015
 
+# 📧 Titel anzeigen
+st.title("📧 NRC Anfrage-zu-Antwort Generator mit GPT")
+
+# 📁 Hilfstool zur Key-Erstellung
+with st.expander("🔐 API-Key in .env-Datei speichern"):
+    entered_key = st.text_input("API-Key hier eingeben", type="password")
+    if st.button("💾 In .env-Datei speichern"):
+        if entered_key.startswith("sk-"):
+            with open(".env", "w") as f:
+                f.write(f"OPENAI_API_KEY={entered_key}")
+            st.success("✅ Key gespeichert! Bitte App neu laden.")
+        else:
+            st.error("❌ Ungültiger API-Key.")
+
+# 📂 API-Key aus Umgebungsvariable laden
+api_key_input = os.getenv("OPENAI_API_KEY")
+if not api_key_input:
+    st.error("❌ Kein API-Key gefunden. Bitte in der Box oben eingeben und speichern.")
+    st.stop()
+
+client = OpenAI(api_key=api_key_input)
+
+# 🧠 Kundenanfrage analysieren
 def parse_customer_request(text):
     vorname = re.search(r"Vorname:\s*(.*)", text)
     nachname = re.search(r"Nachname:\s*(.*)", text)
     fehler = re.search(r"Sonstige Fehlerbeschreibung:\s*(.*)", text, re.DOTALL)
-    geraet = re.search(r"GerÃGer\xc3¤Ger\xc3\xa4tetyp:\s*(.*)", text)
+    geraet = re.search(r"Gerätetyp:\s*(.*)", text)
     modell = re.search(r"Modellbezeichnung\s*(.*)", text)
 
     return {
@@ -24,6 +48,7 @@ def parse_customer_request(text):
         "fehler": fehler.group(1).strip() if fehler else ""
     }
 
+# 📧 GPT-generierte Mail erstellen + Kosten schätzen
 def generate_gpt_email(anrede, nachname, geraet, problem, reparaturart, preis, dauer):
     prompt = f"""
 Formuliere eine professionelle und freundliche Antwort-E-Mail im Namen eines Reparaturservices an eine(n) Kund:in namens {anrede} {nachname}. Die Person hat ein Problem mit folgendem Gerät: {geraet}.
@@ -54,30 +79,20 @@ https://notebook-repair-corner.at
             ],
             temperature=0.7
         )
-        return response.choices[0].message.content.strip()
+        completion = response.choices[0].message.content.strip()
+        usage = response.usage
+        cost_estimate = (usage.prompt_tokens * COST_INPUT + usage.completion_tokens * COST_OUTPUT)
+        return completion, cost_estimate
     except OpenAIError as e:
-        return f"❌ Fehler bei der GPT-Anfrage: {str(e)}"
+        return f"❌ Fehler bei der GPT-Anfrage: {str(e)}", 0.0
 
-st.title("📧 NRC Anfrage-zu-Antwort Generator mit GPT")
-
-api_key_input = st.text_input("🔑 OpenAI API-Key eingeben", type="password")
-if api_key_input:
-    os.environ["OPENAI_API_KEY"] = api_key_input
-    client = OpenAI(api_key=api_key_input)
-    st.success("API-Key übernommen.")
-else:
-    if os.getenv("OPENAI_API_KEY"):
-        client = OpenAI()
-
+# 🔍 Verbindungstest
 if st.button("🔍 API-Verbindung testen"):
-    if client:
-        try:
-            client.models.list()
-            st.success("✅ Verbindung erfolgreich hergestellt.")
-        except Exception as e:
-            st.error(f"❌ Verbindung fehlgeschlagen: {str(e)}")
-    else:
-        st.error("❌ Kein API-Key definiert.")
+    try:
+        client.models.list()
+        st.success("✅ Verbindung erfolgreich hergestellt.")
+    except Exception as e:
+        st.error(f"❌ Verbindung fehlgeschlagen: {str(e)}")
 
 kundenanfrage = st.text_area("📝 Kundenanfrage einfügen", height=300)
 
@@ -95,12 +110,10 @@ if kundenanfrage:
     dauer = st.text_input("Dauer", value="5–7 Werktage")
 
     if st.button("🤖 GPT-E-Mail generieren"):
-        if not client:
-            st.error("❌ Kein gültiger OpenAI-Client verfügbar.")
-        else:
-            with st.spinner("ChatGPT denkt nach..."):
-                mail = generate_gpt_email(anrede, nachname, geraet, problem, reparaturart, preis, dauer)
-            st.text_area("📄 Generierte GPT-E-Mail", mail, height=600)
+        with st.spinner("ChatGPT denkt nach..."):
+            mail, kosten = generate_gpt_email(anrede, nachname, geraet, problem, reparaturart, preis, dauer)
+        st.text_area("📄 Generierte GPT-E-Mail", mail, height=600)
+        st.markdown(f"💰 **Geschätzte GPT-Kosten:** {kosten:.4f} USD")
 
     if st.button("📄 Standard-E-Mail (fixer Text)"):
         mail = f"""
