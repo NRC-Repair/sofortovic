@@ -14,21 +14,10 @@ COST_OUTPUT = 0.0015
 # 📧 Titel anzeigen
 st.title("📧 NRC Anfrage-zu-Antwort Generator mit GPT")
 
-# 📁 Hilfstool zur Key-Erstellung
-with st.expander("🔐 API-Key in .env-Datei speichern"):
-    entered_key = st.text_input("API-Key hier eingeben", type="password")
-    if st.button("💾 In .env-Datei speichern"):
-        if entered_key.startswith("sk-"):
-            with open(".env", "w") as f:
-                f.write(f"OPENAI_API_KEY={entered_key}")
-            st.success("✅ Key gespeichert! Bitte App neu laden.")
-        else:
-            st.error("❌ Ungültiger API-Key.")
-
 # 📂 API-Key aus Umgebungsvariable laden
 api_key_input = os.getenv("OPENAI_API_KEY")
 if not api_key_input:
-    st.error("❌ Kein API-Key gefunden. Bitte in der Box oben eingeben und speichern.")
+    st.error("❌ Kein API-Key gefunden. Bitte stellen Sie sicher, dass eine .env-Datei mit OPENAI_API_KEY vorhanden ist.")
     st.stop()
 
 client = OpenAI(api_key=api_key_input)
