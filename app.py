@@ -6,8 +6,8 @@ vielen Dank für Ihre Anfrage und die genaue Fehlerbeschreibung.
 
 Nach Ihrer Schilderung handelt es sich sehr wahrscheinlich um [KURZE ZUSAMMENFASSUNG DES PROBLEMS]. Diese Reparatur können wir selbstverständlich für Sie durchführen.
 
-✅ Der Preis für [REPARATURART] beträgt **[PREIS] €**  
-🕒 Die Reparaturdauer beträgt ca. **[DAUER]** nach Geräteeingang.
+ Der Preis für [REPARATURART] beträgt **[PREIS] €**  
+ Die Reparaturdauer beträgt ca. **[DAUER]** nach Geräteeingang.
 
 Wir untersuchen kostenlos Ihr Gerät und erstellen anschließend eine professionelle Diagnose sowie den kostenlosen Kostenvoranschlag.
 
