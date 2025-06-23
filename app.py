@@ -47,7 +47,7 @@ def parse_customer_request(text):
         "fehler": fehler.group(1).strip() if fehler else ""
     }
 
-# 📧 GPT-generierte Mail erstellen + Kosten schätzen
+# 📧 GPT-generierte Mail erstellen + Kosten und Tokens anzeigen
 def generate_gpt_email(anrede, nachname, geraet, problem, reparaturart, preis, dauer):
     prompt = f"""
 Formuliere eine professionelle und freundliche Antwort-E-Mail im Namen eines Reparaturservices an eine(n) Kund:in namens {anrede} {nachname}. Die Person hat ein Problem mit folgendem Gerät: {geraet}.
@@ -81,9 +81,13 @@ https://notebook-repair-corner.at
         completion = response.choices[0].message.content.strip()
         usage = response.usage
         cost_estimate = (usage.prompt_tokens * COST_INPUT + usage.completion_tokens * COST_OUTPUT)
-        return completion, cost_estimate
+
+        # 💬 Token-Anzeige
+        token_details = f"\n🔢 **Tokens:** Prompt: {usage.prompt_tokens} | Completion: {usage.completion_tokens} | Total: {usage.total_tokens}"
+        return completion, cost_estimate, token_details
+
     except OpenAIError as e:
-        return f"❌ Fehler bei der GPT-Anfrage: {str(e)}", 0.0
+        return f"❌ Fehler bei der GPT-Anfrage: {str(e)}", 0.0, ""
 
 # 🔍 Verbindungstest
 if st.button("🔍 API-Verbindung testen"):
@@ -110,9 +114,10 @@ if kundenanfrage:
 
     if st.button("🤖 GPT-E-Mail generieren"):
         with st.spinner("ChatGPT denkt nach..."):
-            mail, kosten = generate_gpt_email(anrede, nachname, geraet, problem, reparaturart, preis, dauer)
+            mail, kosten, token_info = generate_gpt_email(anrede, nachname, geraet, problem, reparaturart, preis, dauer)
         st.text_area("📄 Generierte GPT-E-Mail", mail, height=600)
         st.markdown(f"💰 **Geschätzte GPT-Kosten:** {kosten:.4f} USD")
+        st.markdown(token_info)
 
     if st.button("📄 Standard-E-Mail (fixer Text)"):
         mail = f"""
