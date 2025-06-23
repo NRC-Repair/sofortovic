@@ -2,7 +2,7 @@ import streamlit as st
 import re
 import os
 from dotenv import load_dotenv
-from openai import OpenAI
+from openai import OpenAI, OpenAIError
 
 # 🔐 .env-Datei laden und Key setzen
 load_dotenv()
@@ -45,14 +45,17 @@ Ihr NRC Technikteam
 https://notebook-repair-corner.at
 """
 
-    response = client.chat.completions.create(
-        model="gpt-4",
-        messages=[
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.7
-    )
-    return response.choices[0].message.content.strip()
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4",
+            messages=[
+                {"role": "user", "content": prompt}
+            ],
+            temperature=0.7
+        )
+        return response.choices[0].message.content.strip()
+    except OpenAIError as e:
+        return f"❌ Fehler bei der GPT-Anfrage: {str(e)}"
 
 st.title("📧 NRC Anfrage-zu-Antwort Generator mit GPT")
 
