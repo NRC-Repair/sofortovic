@@ -4,16 +4,17 @@ import os
 from dotenv import load_dotenv
 from openai import OpenAI, OpenAIError
 
-# 🔐 .env-Datei laden und Key setzen
+# 🔐 .env-Datei laden (optional, falls vorhanden)
 load_dotenv()
-os.environ["OPENAI_API_KEY"] = os.getenv("OPENAI_API_KEY")
-client = OpenAI()
+
+# 🧠 OpenAI-Client vorbereiten (manuell eingetragener Key hat Priorität)
+client = None
 
 def parse_customer_request(text):
     vorname = re.search(r"Vorname:\s*(.*)", text)
     nachname = re.search(r"Nachname:\s*(.*)", text)
     fehler = re.search(r"Sonstige Fehlerbeschreibung:\s*(.*)", text, re.DOTALL)
-    geraet = re.search(r"Ger\xc3\xa4tetyp:\s*(.*)", text)
+    geraet = re.search(r"GerÃGer\xc3¤Ger\xc3\xa4tetyp:\s*(.*)", text)
     modell = re.search(r"Modellbezeichnung\s*(.*)", text)
 
     return {
@@ -59,11 +60,24 @@ https://notebook-repair-corner.at
 
 st.title("📧 NRC Anfrage-zu-Antwort Generator mit GPT")
 
-if st.button("🔍 API-Verbindung testen"):
+api_key_input = st.text_input("🔑 OpenAI API-Key eingeben", type="password")
+if api_key_input:
+    os.environ["OPENAI_API_KEY"] = api_key_input
+    client = OpenAI(api_key=api_key_input)
+    st.success("API-Key übernommen.")
+else:
     if os.getenv("OPENAI_API_KEY"):
-        st.success("✅ API-Key wurde erkannt und geladen.")
+        client = OpenAI()
+
+if st.button("🔍 API-Verbindung testen"):
+    if client:
+        try:
+            client.models.list()
+            st.success("✅ Verbindung erfolgreich hergestellt.")
+        except Exception as e:
+            st.error(f"❌ Verbindung fehlgeschlagen: {str(e)}")
     else:
-        st.error("❌ API-Key wurde nicht gefunden. Bitte überprüfe deine .env-Datei oder die Streamlit Secrets.")
+        st.error("❌ Kein API-Key definiert.")
 
 kundenanfrage = st.text_area("📝 Kundenanfrage einfügen", height=300)
 
@@ -81,9 +95,12 @@ if kundenanfrage:
     dauer = st.text_input("Dauer", value="5–7 Werktage")
 
     if st.button("🤖 GPT-E-Mail generieren"):
-        with st.spinner("ChatGPT denkt nach..."):
-            mail = generate_gpt_email(anrede, nachname, geraet, problem, reparaturart, preis, dauer)
-        st.text_area("📄 Generierte GPT-E-Mail", mail, height=600)
+        if not client:
+            st.error("❌ Kein gültiger OpenAI-Client verfügbar.")
+        else:
+            with st.spinner("ChatGPT denkt nach..."):
+                mail = generate_gpt_email(anrede, nachname, geraet, problem, reparaturart, preis, dauer)
+            st.text_area("📄 Generierte GPT-E-Mail", mail, height=600)
 
     if st.button("📄 Standard-E-Mail (fixer Text)"):
         mail = f"""
