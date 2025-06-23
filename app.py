@@ -8,8 +8,10 @@ from openai import OpenAI, OpenAIError
 load_dotenv()
 
 # 💰 Token-Kosten GPT-3.5 (geschätzt pro 1000 Tokens)
-COST_INPUT = 0.0005
-COST_OUTPUT = 0.0015
+COST_INPUT_GPT35 = 0.0005
+COST_OUTPUT_GPT35 = 0.0015
+COST_INPUT_GPT4 = 0.01
+COST_OUTPUT_GPT4 = 0.03
 
 # 📧 Titel anzeigen
 st.title("📧 NRC Anfrage-zu-Antwort Generator mit GPT")
@@ -30,6 +32,8 @@ with st.sidebar:
         st.warning("⚠️ Kein API-Key gefunden.")
         st.stop()
 
+    model_choice = st.radio("🧠 Modellwahl", options=["gpt-3.5-turbo", "gpt-4"], index=0)
+
 client = OpenAI(api_key=api_key_input)
 
 # 🧠 Kundenanfrage analysieren
@@ -48,7 +52,7 @@ def parse_customer_request(text):
     }
 
 # 📧 GPT-generierte Mail erstellen + Kosten und Tokens anzeigen
-def generate_gpt_email(anrede, nachname, geraet, problem, reparaturart, preis, dauer):
+def generate_gpt_email(anrede, nachname, geraet, problem, reparaturart, preis, dauer, model):
     prompt = f"""
 Formuliere eine professionelle und freundliche Antwort-E-Mail im Namen eines Reparaturservices an eine(n) Kund:in namens {anrede} {nachname}. Die Person hat ein Problem mit folgendem Gerät: {geraet}.
 
@@ -72,7 +76,7 @@ https://notebook-repair-corner.at
 
     try:
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model=model,
             messages=[
                 {"role": "user", "content": prompt}
             ],
@@ -80,9 +84,12 @@ https://notebook-repair-corner.at
         )
         completion = response.choices[0].message.content.strip()
         usage = response.usage
-        cost_estimate = (usage.prompt_tokens * COST_INPUT + usage.completion_tokens * COST_OUTPUT)
 
-        # 💬 Token-Anzeige
+        if model == "gpt-3.5-turbo":
+            cost_estimate = (usage.prompt_tokens * COST_INPUT_GPT35 + usage.completion_tokens * COST_OUTPUT_GPT35)
+        else:
+            cost_estimate = (usage.prompt_tokens * COST_INPUT_GPT4 + usage.completion_tokens * COST_OUTPUT_GPT4)
+
         token_details = f"\n🔢 **Tokens:** Prompt: {usage.prompt_tokens} | Completion: {usage.completion_tokens} | Total: {usage.total_tokens}"
         return completion, cost_estimate, token_details
 
@@ -114,7 +121,7 @@ if kundenanfrage:
 
     if st.button("🤖 GPT-E-Mail generieren"):
         with st.spinner("ChatGPT denkt nach..."):
-            mail, kosten, token_info = generate_gpt_email(anrede, nachname, geraet, problem, reparaturart, preis, dauer)
+            mail, kosten, token_info = generate_gpt_email(anrede, nachname, geraet, problem, reparaturart, preis, dauer, model_choice)
         st.text_area("📄 Generierte GPT-E-Mail", mail, height=600)
         st.markdown(f"💰 **Geschätzte GPT-Kosten:** {kosten:.4f} USD")
         st.markdown(token_info)
